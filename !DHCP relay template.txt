@@ -1,0 +1,91 @@
+!DHCP relay template
+
+[ ] Correct client subnet mask
+[ ] ip helper-address on client-facing interface
+[ ] Relay → DHCP server reachable
+[ ] DHCP server → client subnet route exists
+[ ] DHCP pool network matches client subnet
+[ ] Excluded gateway IP
+
+
+==============================
+DHCP RELAY CONFIG TEMPLATE
+==============================
+
+TOPOLOGY CHECK
+--------------
+Client Subnet      : ____________
+Client Gateway IP  : ____________
+DHCP Server IP     : ____________
+Relay Router IP    : ____________
+Server-side Router : ____________
+
+
+STEP 1: CLIENT-FACING INTERFACE (RELAY ROUTER)
+----------------------------------------------
+interface <CLIENT_INTERFACE>
+ ip address <GATEWAY_IP> <SUBNET_MASK>
+ ip helper-address <DHCP_SERVER_IP>
+ no shutdown
+
+
+STEP 2: SERVER / UPLINK INTERFACE
+---------------------------------
+interface <UPLINK_INTERFACE>
+ ip address <UPLINK_IP> <SUBNET_MASK>
+ no shutdown
+
+
+STEP 3: ROUTING (CRITICAL)
+-------------------------
+! On DHCP Server Router
+ip route <CLIENT_SUBNET> <SUBNET_MASK> <RELAY_NEXT_HOP>
+
+! Verify reachability
+ping <DHCP_SERVER_IP>
+
+
+STEP 4: DHCP SERVER CONFIG
+--------------------------
+ip dhcp excluded-address <GATEWAY_IP>
+
+ip dhcp pool <POOL_NAME>
+ network <CLIENT_SUBNET> <SUBNET_MASK>
+ default-router <GATEWAY_IP>
+ dns-server <DNS_IP>
+
+
+STEP 5: VERIFICATION
+--------------------
+show ip dhcp binding
+show ip dhcp server statistics
+show ip route
+show run interface <CLIENT_INTERFACE>
+
+
+STEP 6: CLIENT TEST
+-------------------
+ipconfig /release
+ipconfig /renew
+
+
+COMMON FAILURES CHECKLIST
+-------------------------
+[ ] Wrong subnet mask
+[ ] ip helper on wrong interface
+[ ] No return route to client subnet
+[ ] DHCP pool network mismatch
+[ ] Gateway IP not excluded
+[ ] ACL blocking UDP 67/68
+
+
+NOT REQUIRED
+------------
+- NAT / PAT
+- Default route (unless Internet involved)
+- ip helper on server-side interface
+- ip helper on inter-router link
+
+==============================
+END OF TEMPLATE
+==============================
